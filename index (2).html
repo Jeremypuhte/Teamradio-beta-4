@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="F1 Radio">
+<meta name="theme-color" content="#0b0b0f">
+<title>F1 Team Radio</title>
+<style>
+:root{--bg:#0b0b0f;--fg:#eee;--panel:#16161c;--line:#333;--muted:#9a9aa5;--ac:#e10600;--acfg:#fff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom);text-align:center;transition:background .2s,color .2s}
+h1{margin:0;font-size:28px;letter-spacing:4px;font-weight:800;max-width:100%;overflow-wrap:anywhere;text-transform:uppercase}
+h1 span{color:var(--ac)}
+input{font-size:20px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);width:260px;text-align:center}
+input:focus-visible,button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+button{font-size:18px;font-weight:700;letter-spacing:2px;padding:14px 34px;border:0;border-radius:12px;background:var(--ac);color:var(--acfg)}
+button:disabled{opacity:.5}
+#room{display:none;flex-direction:column;align-items:center;gap:22px}
+#orb{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;width:170px;height:170px;border-radius:50%;border:4px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--muted);transition:.15s}
+#orb.on{border-color:var(--ac);box-shadow:0 0 50px color-mix(in srgb,var(--ac) 67%,transparent);color:var(--fg)}
+#st{font-size:14px;color:var(--muted);min-height:18px}
+#who{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:320px}
+.chip{font-size:13px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);overflow-wrap:anywhere;transition:.15s}
+.chip.on{border-color:var(--ac);color:var(--fg);background:color-mix(in srgb,var(--ac) 22%,transparent)}
+#err{color:var(--ac);font-size:14px;max-width:300px;min-height:0}
+label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px;align-items:center}
+input[type=range]{width:220px;padding:0;accent-color:var(--ac)}
+input[type=checkbox]{accent-color:var(--ac)}
+small{color:var(--muted);opacity:.8;max-width:300px}
+
+#gear{position:fixed;top:calc(env(safe-area-inset-top) + 12px);right:calc(env(safe-area-inset-right) + 12px);width:44px;height:44px;padding:0;border-radius:50%;background:var(--panel);color:var(--fg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;z-index:20}
+#gear svg{width:22px;height:22px}
+#menu{position:fixed;top:calc(env(safe-area-inset-top) + 64px);right:calc(env(safe-area-inset-right) + 12px);width:min(280px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:left;z-index:20;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+#menu h2{margin:0 0 12px;font-size:15px;font-weight:700}
+#themes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#themes button{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;letter-spacing:0;padding:10px;border-radius:10px;background:transparent;color:var(--fg);border:1px solid var(--line);text-align:left}
+#themes button[aria-pressed=true]{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 16%,transparent)}
+#themes i{flex:none;width:22px;height:22px;border-radius:50%;border:1px solid rgba(128,128,128,.5)}
+</style>
+</head>
+<body>
+<button id="gear" aria-label="Einstellungen" aria-expanded="false" aria-controls="menu">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+</button>
+<div id="menu" role="dialog" aria-label="Einstellungen" hidden>
+  <h2>Design</h2>
+  <div id="themes"></div>
+</div>
+
+<h1 id="title">TEAM <span>RADIO</span></h1>
+<div id="join" style="display:flex;flex-direction:column;align-items:center;gap:18px">
+  <input id="name" placeholder="Dein Name (z. B. Max)" maxlength="16" autocomplete="off">
+  <input id="team" placeholder="Teamname (z. B. Red Bull)" maxlength="20" autocomplete="off">
+  <input id="code" placeholder="Raumcode" maxlength="20" autocapitalize="off" autocomplete="off">
+  <div id="err" role="alert"></div>
+  <button id="go">VERBINDEN</button>
+  <small>Der Raumcode bestimmt, wer zusammen funkt. Dein Name muss im Raum einzigartig sein. Den Teamnamen kannst du frei wählen. Lässt du ihn leer, übernimmst du den Namen des Teams, das den Raum erstellt hat. Am besten mit Kopfhörern, sonst gibt es Rückkopplung.</small>
+</div>
+<div id="room">
+  <div id="orb">Stille</div>
+  <div id="st"></div>
+  <div id="who"></div>
+  <label style="flex-direction:row;gap:10px;font-size:15px;color:var(--fg)"><input type="checkbox" id="ptt" style="width:auto"> Push-to-Talk (Kreis gedrückt halten)</label>
+  <label>Mikro-Empfindlichkeit<input id="sens" type="range" min="1" max="20" value="8"></label>
+  <button id="leave">VERLASSEN</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let ctx,mic,txDest,tx,peer,base,teamName='',myName='',selfVad,people={},members={},noiseBuf,thr=0.03,quietUntil=0,active=0,ptt=false,pttOn=false,wl=null;
+const cleanName=s=>String(s||'').replace(/\s+/g,' ').trim().slice(0,16);
+const norm=s=>cleanName(s).toLowerCase();
+
+/* ---------- Themes ---------- */
+const THEMES=[
+  {id:'red',   n:'Rennrot',    bg:'#0b0b0f',fg:'#eeeeee',panel:'#16161c',line:'#333333',muted:'#9a9aa5',ac:'#e10600',acfg:'#ffffff'},
+  {id:'teal',  n:'Silberpfeil',bg:'#0a1214',fg:'#e6f0ef',panel:'#122024',line:'#274147',muted:'#87a3a3',ac:'#00d2be',acfg:'#04201d'},
+  {id:'orange',n:'Papaya',     bg:'#14100b',fg:'#f2ebe3',panel:'#1e1812',line:'#3a2f22',muted:'#a89a88',ac:'#ff8000',acfg:'#1a0e00'},
+  {id:'blue',  n:'Nachtblau',  bg:'#070b16',fg:'#e8edf8',panel:'#101830',line:'#26335a',muted:'#8e9bbd',ac:'#3d7bff',acfg:'#ffffff'},
+  {id:'green', n:'Grün',       bg:'#07120c',fg:'#e6f3ea',panel:'#0f1e15',line:'#234030',muted:'#8aa896',ac:'#2fd16b',acfg:'#03170a'},
+  {id:'violet',n:'Violett',    bg:'#0e0814',fg:'#f0e9f7',panel:'#1a1024',line:'#3a2750',muted:'#a595b8',ac:'#b05cff',acfg:'#ffffff'},
+  {id:'light', n:'Tageslicht', bg:'#f2f2f4',fg:'#15151a',panel:'#ffffff',line:'#cfcfd6',muted:'#5d5d68',ac:'#d90500',acfg:'#ffffff'}
+];
+function applyTheme(id){
+  const t=THEMES.find(x=>x.id===id)||THEMES[0],s=document.documentElement.style;
+  s.setProperty('--bg',t.bg);s.setProperty('--fg',t.fg);s.setProperty('--panel',t.panel);s.setProperty('--line',t.line);
+  s.setProperty('--muted',t.muted);s.setProperty('--ac',t.ac);s.setProperty('--acfg',t.acfg);
+  document.querySelector('meta[name=theme-color]').content=t.bg;
+  document.querySelectorAll('#themes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===t.id));
+  try{localStorage.setItem('f1radio-theme',t.id)}catch(e){}
+}
+THEMES.forEach(t=>{
+  const b=document.createElement('button'),i=document.createElement('i');
+  b.type='button';b.dataset.id=t.id;i.style.background='linear-gradient(135deg,'+t.bg+' 50%,'+t.ac+' 50%)';
+  b.append(i,t.n);b.onclick=()=>applyTheme(t.id);$('themes').append(b);
+});
+let savedTheme='red';try{savedTheme=localStorage.getItem('f1radio-theme')||'red'}catch(e){}
+applyTheme(savedTheme);
+
+function menu(open){$('menu').hidden=!open;$('gear').setAttribute('aria-expanded',open)}
+$('gear').onclick=e=>{e.stopPropagation();menu($('menu').hidden)};
+document.addEventListener('click',e=>{if(!$('menu').hidden&&!$('menu').contains(e.target))menu(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('menu').hidden){menu(false);$('gear').focus()}});
+
+/* ---------- Gespeicherte Eingaben & Fehlermeldung ---------- */
+try{
+  const n=localStorage.getItem('f1radio-name'),t=localStorage.getItem('f1radio-team'),c=localStorage.getItem('f1radio-code');
+  if(n)$('name').value=n;if(t)$('team').value=t;if(c)$('code').value=c;
+  const er=sessionStorage.getItem('f1radio-err');
+  if(er){$('err').textContent=er;sessionStorage.removeItem('f1radio-err')}
+}catch(e){}
+
+// Teamname in Überschrift setzen (leer = neutraler Titel)
+function setTeam(name){
+  teamName=name;
+  const t=$('title');t.textContent='';
+  if(name){const sp=document.createElement('span');sp.textContent=name;t.append(sp,' RADIO')}
+  else{t.append('TEAM ');const sp=document.createElement('span');sp.textContent='RADIO';t.append(sp)}
+}
+
+async function keepAwake(){try{wl=await navigator.wakeLock.request('screen')}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&mic)keepAwake()});
+function pttSet(on){
+  if(!ptt||on===pttOn)return;
+  pttOn=on;mic.getAudioTracks()[0].enabled=on;beep(on);setActive(on?1:-1);
+}
+$('ptt').onchange=e=>{
+  ptt=e.target.checked;mic.getAudioTracks()[0].enabled=!ptt;
+  if(!ptt&&pttOn){pttOn=false;setActive(-1)}
+};
+const orbEl=$('orb');
+orbEl.addEventListener('pointerdown',e=>{e.preventDefault();pttSet(true)});
+['pointerup','pointercancel','pointerleave'].forEach(n=>orbEl.addEventListener(n,()=>pttSet(false)));
+const calls={},vads=[];
+
+$('sens').oninput=e=>{thr=0.06-e.target.value*0.0027}; // 1=unempfindlich ... 20=empfindlich
+$('sens').oninput({target:$('sens')});
+
+function curve(k){const n=256,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i*2/n-1;c[i]=(3+k)*x*20*(Math.PI/180)/(Math.PI+k*Math.abs(x))}return c}
+
+function beep(start){
+  const t=ctx.currentTime;quietUntil=performance.now()+(start?900:600);
+  const bus=ctx.createGain(),bp=ctx.createBiquadFilter(),ws=ctx.createWaveShaper(),out=ctx.createGain();
+  bp.type='bandpass';bp.frequency.value=1500;bp.Q.value=.6;ws.curve=curve(10);out.gain.value=1.6;
+  bus.connect(txDest);                                   // geht an alle anderen im Raum
+  bus.connect(bp);bp.connect(ws);ws.connect(out);out.connect(ctx.destination); // und du hörst es selbst
+  const du=(at,f)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=f;
+    g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(.5,at+.006);
+    g.gain.exponentialRampToValueAtTime(.001,at+.075);
+    o.connect(g).connect(bus);o.start(at);o.stop(at+.09)};
+  const noise=(at,dur,vol)=>{const n=ctx.createBufferSource(),g=ctx.createGain();n.buffer=noiseBuf;
+    g.gain.setValueAtTime(vol,at);g.gain.exponentialRampToValueAtTime(.001,at+dur);
+    n.connect(g).connect(bus);n.start(at);n.stop(at+dur+.02)};
+  if(start){for(let i=0;i<4;i++)du(t+i*.1,900)}          // du du du du
+  else{du(t,700);noise(t+.07,.18,.3)}                     // Abschluss
+}
+
+function radioChain(stream){
+  const src=ctx.createMediaStreamSource(stream),
+    hp=ctx.createBiquadFilter(),lp=ctx.createBiquadFilter(),
+    ws=ctx.createWaveShaper(),comp=ctx.createDynamicsCompressor(),g=ctx.createGain();
+  hp.type='highpass';hp.frequency.value=500;
+  lp.type='lowpass';lp.frequency.value=3200;
+  ws.curve=curve(30);g.gain.value=1.5;
+  src.connect(hp);hp.connect(lp);lp.connect(ws);ws.connect(comp);comp.connect(g);g.connect(ctx.destination);
+  // Chrome-Workaround: Stream muss an ein Audio-Element hängen, damit WebAudio Daten bekommt
+  const a=new Audio();a.muted=true;a.srcObject=stream;a.play().catch(()=>{});
+}
+
+function setActive(d){active=Math.max(0,active+d);const o=$('orb');o.classList.toggle('on',active>0);o.textContent=active>0?'● FUNK':'Stille';renderWho()}
+
+function addVad(stream,local){
+  const an=ctx.createAnalyser();an.fftSize=1024;
+  const hp=ctx.createBiquadFilter(),lp=ctx.createBiquadFilter();
+  hp.type='highpass';hp.frequency.value=300;   // Motorbrummen raus
+  lp.type='lowpass';lp.frequency.value=3000;   // Zischen/Wind raus
+  ctx.createMediaStreamSource(stream).connect(hp);hp.connect(lp);lp.connect(an);
+  const buf=new Uint8Array(an.fftSize),v={on:false,last:0,since:0,nf:0.01,dead:false,
+    tick(now){
+      if(local&&(now<quietUntil||(ptt&&!v.on)))return;
+      an.getByteTimeDomainData(buf);let s=0;
+      for(const b of buf){const x=(b-128)/128;s+=x*x}
+      const r=Math.sqrt(s/buf.length);
+      const limit=Math.max(thr,v.nf*3); // passt sich dem Dauer-Lärm an
+      if(r>limit){
+        v.last=now;if(!v.since)v.since=now;
+        if(!v.on&&now-v.since>150){v.on=true;if(local)beep(true);setActive(1)} // erst nach 150 ms Sprache
+      }else{
+        v.since=0;
+        if(!v.on)v.nf=Math.min(0.08,v.nf*0.97+r*0.03);
+        if(v.on&&now-v.last>800){v.on=false;if(local)beep(false);setActive(-1)}
+      }
+    }};
+  vads.push(v);return v;
+}
+setInterval(()=>{const n=performance.now();vads.forEach(v=>v.tick(n))},50);
+
+/* ---------- Teilnehmerliste ---------- */
+function renderWho(){
+  const w=$('who');w.textContent='';
+  Object.keys(people).forEach(id=>{
+    const me=peer&&id===peer.id;
+    const talking=me?(ptt?pttOn:!!(selfVad&&selfVad.on)):!!(calls[id]&&calls[id].vad&&calls[id].vad.on);
+    const s=document.createElement('span');s.className='chip'+(talking?' on':'');
+    s.textContent=people[id]+(me?' (du)':'');w.append(s);
+  });
+}
+function count(){
+  $('st').textContent=Object.keys(people).length+' im Raum: '+base.replace('f1radio-','');
+  renderWho();
+}
+function setPeople(p){
+  people={};
+  Object.keys(p||{}).forEach(id=>{people[id]=cleanName(p[id])});
+  if(peer&&peer.id)people[peer.id]=myName;
+  count();
+}
+function hostPeople(){
+  const p={};p[peer.id]=myName;
+  Object.keys(members).forEach(id=>{p[id]=members[id].name});
+  return p;
+}
+function broadcast(){
+  Object.keys(members).forEach(id=>{try{members[id].conn.send({t:'roster',people})}catch(e){}});
+}
+
+function attach(call){
+  call.on('stream',s=>{
+    if(calls[call.peer])return;
+    calls[call.peer]=call;call.vad=addVad(s,false);radioChain(s);count();
+  });
+  call.on('close',()=>{
+    if(call.vad){call.vad.dead=true;const i=vads.indexOf(call.vad);if(i>-1)vads.splice(i,1);if(call.vad.on)setActive(-1)}
+    delete calls[call.peer];renderWho();
+  });
+}
+
+function init(asHost){
+  peer=asHost?new Peer(base+'-host'):new Peer();
+  peer.on('open',id=>{
+    people={};people[id]=myName;
+    $('st').textContent=asHost?'Raum erstellt, warte auf andere...':'Verbinde...';
+    renderWho();
+    if(!asHost){
+      const c=peer.connect(base+'-host',{reliable:true});
+      c.on('open',()=>c.send({t:'hello',name:myName}));
+      c.on('data',d=>{
+        if(!d)return;
+        if(d.t==='denied'){
+          try{sessionStorage.setItem('f1radio-err','Der Name „'+myName+'“ ist in diesem Raum schon vergeben. Bitte wähle einen anderen.')}catch(e){}
+          location.reload();return;
+        }
+        if(d.t==='welcome'||d.t==='roster'){
+          setPeople(d.people);
+          if(d.t==='welcome'){
+            if(!teamName&&d.team)setTeam(d.team); // Teamnamen vom Raum übernehmen
+            Object.keys(people).forEach(pid=>{if(pid!==peer.id&&!calls[pid])attach(peer.call(pid,tx))});
+          }
+        }
+      });
+    }
+  });
+  peer.on('call',call=>{call.answer(tx);attach(call)});
+  peer.on('connection',c=>{
+    if(!asHost)return;
+    c.on('data',d=>{
+      if(!d||d.t!=='hello'||members[c.peer])return;
+      const n=cleanName(d.name);
+      const taken=!n||norm(n)===norm(myName)||Object.values(members).some(m=>norm(m.name)===norm(n));
+      if(taken){c.send({t:'denied'});setTimeout(()=>c.close(),500);return}
+      members[c.peer]={conn:c,name:n};
+      people=hostPeople();
+      c.send({t:'welcome',team:teamName,people});
+      broadcast();count();
+    });
+    c.on('close',()=>{
+      if(members[c.peer]&&members[c.peer].conn===c){delete members[c.peer];people=hostPeople();broadcast();count()}
+    });
+  });
+  peer.on('error',e=>{
+    if(e.type==='unavailable-id'&&asHost){peer.destroy();init(false)}
+    else if(e.type!=='peer-unavailable')$('st').textContent='Fehler: '+e.type;
+  });
+}
+
+$('go').onclick=async()=>{
+  $('err').textContent='';
+  const room=$('code').value.toLowerCase().replace(/[^a-z0-9]/g,'');
+  myName=cleanName($('name').value);
+  if(!myName){$('err').textContent='Bitte gib einen Namen ein.';$('name').focus();return}
+  if(!room){$('code').focus();return}
+  const team=$('team').value.trim();
+  $('go').disabled=true;
+  try{
+    ctx=new (window.AudioContext||window.webkitAudioContext)();ctx.resume(); // direkt im Tap, wichtig für iOS
+    noiseBuf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);
+    const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+  }catch(e){alert('Mikrofon nicht erlaubt oder nicht verfügbar. Bitte Zugriff erlauben und neu laden.');$('go').disabled=false;return}
+  try{localStorage.setItem('f1radio-name',myName);localStorage.setItem('f1radio-team',team);localStorage.setItem('f1radio-code',$('code').value.trim())}catch(e){}
+  base='f1radio-'+room;
+  setTeam(team);
+  txDest=ctx.createMediaStreamDestination();ctx.createMediaStreamSource(mic).connect(txDest);tx=txDest.stream;
+  selfVad=addVad(mic,true);
+  $('join').style.display='none';$('room').style.display='flex';
+  keepAwake();
+  init(true);
+};
+
+$('leave').onclick=()=>location.reload();
+</script>
+</body>
+</html>
